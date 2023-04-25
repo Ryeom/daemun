@@ -1,18 +1,29 @@
 package main
 
 import (
-	"daemun/log"
-	"daemun/util"
 	"errors"
+	"github.com/Ryeom/daemun/log"
+	"github.com/Ryeom/daemun/util"
 	"github.com/spf13/viper"
 	"os"
 	"runtime"
-	"strings"
+	"strconv"
 )
 
 func init() {
 
 }
+func setArguments(mode string) error {
+	if len(os.Args) != 1 {
+		err := errors.New("Process mode is not exists. arguments length : " + strconv.Itoa(len(os.Args)))
+		return err
+	}
+	//if mode != os.Args[1] {
+	//	err := errors.New("Process mode is not match. : " + strconv.Itoa(len(os.Args)))
+	//}
+	return nil
+}
+
 func main() {
 	//runtime.GOMAXPROCS(runtime.NumCPU())
 
@@ -42,18 +53,19 @@ func initializeSetting() error {
 	mark := false
 	if os == "darwin" {
 		mark = true
+		log.Logger.Error(mark, "")
 	}
-
-	for k, v := range viper.AllKeys() {
-		if strings.HasPrefix(v, ".") {
-			continue
-		}
-		value := viper.GetString(v)
-		if value == "" {
-			continue
-		}
-
-	}
+	//
+	//for k, v := range viper.AllKeys() {
+	//	if strings.HasPrefix(v, ".") {
+	//		continue
+	//	}
+	//	value := viper.GetString(v)
+	//	if value == "" {
+	//		continue
+	//	}
+	//
+	//}
 	// 기타 강제 설정
 	ip := util.GetLocalIP()
 	viper.SetDefault("gateway.current-ip", ip)

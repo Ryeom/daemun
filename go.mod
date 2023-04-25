@@ -1,4 +1,4 @@
-module daemun
+module github.com/Ryeom/daemun
 
 go 1.19
 
