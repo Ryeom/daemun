@@ -2,8 +2,8 @@ package main
 
 import (
 	"errors"
+	"github.com/Ryeom/daemun/internal"
 	"github.com/Ryeom/daemun/log"
-	"github.com/Ryeom/daemun/util"
 	"github.com/spf13/viper"
 	"os"
 	"runtime"
@@ -67,7 +67,7 @@ func initializeSetting() error {
 	//
 	//}
 	// 기타 강제 설정
-	ip := util.GetLocalIP()
+	ip := internal.GetLocalIP()
 	viper.SetDefault("gateway.current-ip", ip)
 
 	return err

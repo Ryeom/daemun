@@ -1,4 +1,4 @@
-package util
+package internal
 
 func Contains(l []string, p string) bool {
 	for _, v := range l {
