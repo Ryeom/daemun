@@ -2,16 +2,21 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"github.com/Ryeom/daemun/internal"
 	"github.com/Ryeom/daemun/log"
-	"github.com/spf13/viper"
+	"github.com/labstack/echo"
+	"github.com/labstack/echo/middleware"
 	"os"
-	"runtime"
 	"strconv"
 )
 
 func init() {
-
+	err := internal.InitializeSetting()
+	if err != nil {
+		fmt.Println(err)
+		panic(err)
+	}
 }
 func setArguments(mode string) error {
 	if len(os.Args) != 1 {
@@ -26,49 +31,12 @@ func setArguments(mode string) error {
 
 func main() {
 	//runtime.GOMAXPROCS(runtime.NumCPU())
+	log.InitializeApplicationLog()
 
-}
+	e := echo.New()
+	e.Use(middleware.CORS())
+	e.Use(middleware.Recover())
+	e.Use(middleware.LoggerWithConfig(log.GetCustomLogConfig()))
 
-func initializeSetting() error {
-	viper.SetConfigName("settings")
-	viper.SetConfigType("toml")
-	configPath, err := os.Getwd()
-	if err != nil {
-		log.Logger.Error("work directory ", err)
-		err = errors.New("Failed reading work directory. " + err.Error())
-		return err
-	}
-	path := configPath
-	viper.AddConfigPath(path)
-	log.Logger.Info("Reading configuration from", path)
-
-	err = viper.ReadInConfig()
-	if err != nil {
-		log.Logger.Error("Failed reading configuration .. ", err)
-		err = errors.New("Failed reading configuration. " + err.Error())
-		return err
-	}
-
-	os := runtime.GOOS
-	mark := false
-	if os == "darwin" {
-		mark = true
-		log.Logger.Error(mark, "")
-	}
-	//
-	//for k, v := range viper.AllKeys() {
-	//	if strings.HasPrefix(v, ".") {
-	//		continue
-	//	}
-	//	value := viper.GetString(v)
-	//	if value == "" {
-	//		continue
-	//	}
-	//
-	//}
-	// 기타 강제 설정
-	ip := internal.GetLocalIP()
-	viper.SetDefault("gateway.current-ip", ip)
-
-	return err
+	log.Logger.Fatal(e.Start(":8080"))
 }
