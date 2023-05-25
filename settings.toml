@@ -2,3 +2,6 @@
 [daemun]
 key=""
 mode="developer"
+
+[config]
+endpoint=""

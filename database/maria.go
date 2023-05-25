@@ -11,8 +11,13 @@ import (
 
 var MariaConnection map[string]*MariaConnectionInfo
 
-func initializeMaria() {
+func InitializeMaria() {
+	var err error
 	MariaConnection = map[string]*MariaConnectionInfo{}
+	MariaConnection["new"], err = NewMariaConnection("", "", "", "", "")
+	if err != nil {
+		log.Logger.Error("MariaDB Error", err)
+	}
 
 }
 
