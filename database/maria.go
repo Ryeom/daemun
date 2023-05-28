@@ -7,20 +7,27 @@ import (
 	"github.com/Ryeom/daemun/internal"
 	"github.com/Ryeom/daemun/log"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/spf13/viper"
 )
 
-var MariaConnection map[string]*MariaConnectionInfo
+var MariaConnection map[string]*ConnectionInfo
 
 func InitializeMaria() {
-	var err error
-	MariaConnection = map[string]*MariaConnectionInfo{}
-	MariaConnection[""], err = newMariaConnection("", "", "", "", "")
+	MariaConnection = map[string]*ConnectionInfo{}
+	c := ConnectionInfo{
+		Host:     viper.GetString("maria.host"),
+		Port:     viper.GetString("maria.port"),
+		User:     viper.GetString("maria.user"),
+		Password: viper.GetString("maria.password"),
+		Database: viper.GetString("maria.database"),
+	}
+	err := c.newConnection()
 	if err != nil {
 		log.Logger.Error("MariaDB Error", err)
 	}
 }
 
-type MariaConnectionInfo struct {
+type ConnectionInfo struct {
 	Connection *sql.DB
 	Host       string `json:"host"`
 	Port       string `json:"port"`
@@ -29,25 +36,26 @@ type MariaConnectionInfo struct {
 	Database   string `json:"database"`
 }
 
-func newMariaConnection(host, port, user, password, database string) (*MariaConnectionInfo, error) {
-	log.Logger.Info(host, port, user, password, database)
-	datasource := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, password, host, port, database)
+func (c *ConnectionInfo) newConnection() error {
+	log.Logger.Info(c.User, c.Password, c.Host, c.Port, c.Database)
+	datasource := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", c.User, c.Password, c.Host, c.Port, c.Database)
 	log.Logger.Info(datasource)
 	mariaConnection, openErr := sql.Open("mysql", datasource)
 	if openErr != nil {
 		log.Logger.Error("Fail MariaDB Try Connect...", openErr)
-		return nil, errors.New("unable to connect MariaDB")
+		return errors.New("unable to connect MariaDB")
 	}
 	pingErr := mariaConnection.Ping()
-	if pingErr != nil { // 처음 Ping 이 실패했다...
+	if pingErr != nil {
 		log.Logger.Error("Fail MariaDB Ping...", pingErr)
-		return nil, errors.New("unable to ping MariaDB")
+		return errors.New("unable to ping MariaDB")
 	}
-	return &MariaConnectionInfo{mariaConnection, host, port, user, password, database}, nil
+	return nil
 }
 
-func (m *MariaConnectionInfo) selectEndpoints() map[string]string {
-	if m.Connection == nil {
+func (c *ConnectionInfo) selectEndpoints() map[string]string {
+	if c.Connection == nil {
+		log.Logger.Error("Disconnected MariaDB... connection is nil.")
 		return nil
 	}
 
@@ -56,8 +64,8 @@ func (m *MariaConnectionInfo) selectEndpoints() map[string]string {
 		//tableName = "t"
 	}
 
-	query := ""
-	rows, queryErr := m.Connection.Query(query)
+	query := "SELECT * FROM ? WHERE "
+	rows, queryErr := c.Connection.Query(query)
 	if queryErr != nil {
 		panic("")
 	}
