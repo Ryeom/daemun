@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/Ryeom/daemun/database"
 	"github.com/Ryeom/daemun/internal"
 	"github.com/Ryeom/daemun/log"
 	"github.com/labstack/echo"
@@ -32,7 +33,7 @@ func setArguments(mode string) error {
 func main() {
 	//runtime.GOMAXPROCS(runtime.NumCPU())
 	log.InitializeApplicationLog()
-
+	database.InitializeMaria()
 	e := echo.New()
 	e.Use(middleware.CORS())
 	e.Use(middleware.Recover())

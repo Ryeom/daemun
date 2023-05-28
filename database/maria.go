@@ -14,23 +14,22 @@ var MariaConnection map[string]*MariaConnectionInfo
 func InitializeMaria() {
 	var err error
 	MariaConnection = map[string]*MariaConnectionInfo{}
-	MariaConnection["new"], err = NewMariaConnection("", "", "", "", "")
+	MariaConnection[""], err = newMariaConnection("", "", "", "", "")
 	if err != nil {
 		log.Logger.Error("MariaDB Error", err)
 	}
-
 }
 
 type MariaConnectionInfo struct {
 	Connection *sql.DB
-	Host       string
-	Port       string
-	User       string
-	Password   string
-	Database   string
+	Host       string `json:"host"`
+	Port       string `json:"port"`
+	User       string `json:"user"`
+	Password   string `json:"password"`
+	Database   string `json:"database"`
 }
 
-func NewMariaConnection(host, port, user, password, database string) (*MariaConnectionInfo, error) {
+func newMariaConnection(host, port, user, password, database string) (*MariaConnectionInfo, error) {
 	log.Logger.Info(host, port, user, password, database)
 	datasource := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s", user, password, host, port, database)
 	log.Logger.Info(datasource)

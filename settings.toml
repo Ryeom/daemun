@@ -5,3 +5,10 @@ mode="developer"
 
 [config]
 endpoint=""
+
+[maria]
+host=""
+port=""
+user=""
+password=""
+database=""
