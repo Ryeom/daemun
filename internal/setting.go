@@ -6,8 +6,21 @@ import (
 	"github.com/Ryeom/daemun/log"
 	"github.com/spf13/viper"
 	"os"
+	"runtime"
 	"strings"
 )
+
+var operateModes = []string{"develop", "stage", "product"}
+
+func IsOperationMode() bool {
+	if runtime.GOOS == "darwin" {
+		return false
+	}
+	if !Contains(operateModes, GetMode()) {
+		return false
+	}
+	return true
+}
 
 func InitializeSetting() error {
 	viper.SetConfigName("settings")
