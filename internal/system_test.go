@@ -2,8 +2,11 @@ package internal
 
 import (
 	"fmt"
+	"log"
+	"os/exec"
 	"runtime"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 	"unsafe"
@@ -60,6 +63,23 @@ func TestSystem(t *testing.T) {
 	runtime.ReadMemStats(&m6)
 	memUsage(&m5, &m6)
 	fmt.Println(t2, t3)
+
+	if runtime.GOOS == "linux" {
+		diskUsage, err := getDiskUsage()
+		if err != nil {
+			log.Println("디스크 사용량을 가져올 수 없습니다:", err)
+		} else {
+			fmt.Println("디스크 사용량:", diskUsage)
+		}
+
+		cpuUsage, err := getCPUUsage()
+		if err != nil {
+			log.Println("CPU 사용량을 가져올 수 없습니다:", err)
+		} else {
+			fmt.Println("CPU 사용량:", cpuUsage)
+		}
+	}
+
 }
 
 func PrintMemUsage() {
@@ -92,4 +112,46 @@ func PrintMemoryUsage() {
 	totalSys := m.Sys / 1024 / 1024
 
 	fmt.Printf("Memory Usage: Used Heap %dMB / Allocated Heap %dMB / Total System %dMB\n", usedHeap, allocatedHeap, totalSys)
+}
+
+// in linux
+func getDiskUsage() (string, error) {
+	out, err := exec.Command("df", "-h").Output()
+	if err != nil {
+		return "", err
+	}
+
+	output := string(out)
+	lines := strings.Split(output, "\n")
+	if len(lines) < 2 {
+		return "", fmt.Errorf("디스크 사용량을 가져올 수 없습니다")
+	}
+
+	fields := strings.Fields(lines[1])
+	if len(fields) < 5 {
+		return "", fmt.Errorf("디스크 사용량을 가져올 수 없습니다")
+	}
+
+	return fields[4], nil
+}
+
+// in linux
+func getCPUUsage() (string, error) {
+	out, err := exec.Command("top", "-bn", "2", "-d", "0.01").Output()
+	if err != nil {
+		return "", err
+	}
+
+	output := string(out)
+	lines := strings.Split(output, "\n")
+	if len(lines) < 3 {
+		return "", fmt.Errorf("CPU 사용량을 가져올 수 없습니다")
+	}
+
+	fields := strings.Fields(lines[2])
+	if len(fields) < 10 {
+		return "", fmt.Errorf("CPU 사용량을 가져올 수 없습니다")
+	}
+
+	return fields[1], nil
 }
