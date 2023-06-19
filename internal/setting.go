@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var operateModes = []string{"develop", "stage", "product"}
+var operateModes = []any{"develop", "stage", "product"}
 
 func IsOperationMode() bool {
 	if runtime.GOOS == "darwin" {
