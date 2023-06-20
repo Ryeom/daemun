@@ -60,7 +60,7 @@ func (c *ConnectionInfo) selectEndpoints() map[string]string {
 	}
 
 	//tableName := ""
-	if !internal.Contains([]string{""}, "") {
+	if !internal.Contains([]any{""}, "") {
 		//tableName = "t"
 	}
 
