@@ -23,3 +23,8 @@ func TestDecryption(t *testing.T) {
 		fmt.Println(k, " = ", decValue)
 	}
 }
+
+func TestContains(t *testing.T) {
+	fmt.Println(internal.Contains([]any{"asdf", "zxcv"}, "asdf"))
+	fmt.Println(internal.Contains([]any{1, 2}, 2))
+}

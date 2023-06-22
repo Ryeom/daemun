@@ -6,6 +6,7 @@ import (
 	"github.com/Ryeom/daemun/database"
 	"github.com/Ryeom/daemun/internal"
 	"github.com/Ryeom/daemun/log"
+	"github.com/Ryeom/daemun/router"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"os"
@@ -38,6 +39,7 @@ func main() {
 	e.Use(middleware.CORS())
 	e.Use(middleware.Recover())
 	e.Use(middleware.LoggerWithConfig(log.GetCustomLogConfig()))
+	router.Initialize(e)
 
 	log.Logger.Fatal(e.Start(":8080"))
 }

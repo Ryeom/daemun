@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Ryeom/daemun/internal"
+	"github.com/Ryeom/daemun/log"
 	"github.com/labstack/echo"
 	"io/ioutil"
 	"net/http"
@@ -22,7 +23,15 @@ func Initialize(e *echo.Echo) {
 	{
 		gatewayRoute(apis)
 	}
-
+	list := setSolutionGroup()
+	for k, v := range list {
+		if len(v) < 1 {
+			log.Logger.Info("Undefined Functions ... ", k)
+			continue
+		}
+		log.Logger.Info("API Initialize ... ", k)
+		e.Group(k, v...)
+	}
 }
 
 func setSolutionGroup() map[string][]echo.MiddlewareFunc {

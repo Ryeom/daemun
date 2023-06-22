@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/gomodule/redigo v1.8.9 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
