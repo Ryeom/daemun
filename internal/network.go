@@ -51,7 +51,7 @@ func SendHttpRequest(method, uri string, headers string, param string, bodyObj i
 	}
 	err = json.Unmarshal([]byte(headers), &header)
 	if err != nil {
-		fmt.Println("헤더 마샬 에러", method, uri, header, param, bodyObj)
+		fmt.Println("header json.Unmarshal Err", method, uri, header, param, bodyObj)
 		return "", ""
 	}
 	if header["Content-Type"] == nil {
@@ -102,7 +102,7 @@ func SendHttpRequest(method, uri string, headers string, param string, bodyObj i
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		str := string(respBody)
-		fmt.Println("리스폰스 바디 읽을때 에러", err, str)
+		fmt.Println("respBody ioutil.ReadAll Err", err, str)
 	}
 	defer resp.Body.Close()
 	var reader io.ReadCloser

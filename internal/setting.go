@@ -60,7 +60,7 @@ func InitializeSetting() error {
 	return err
 }
 
-func PrintAllLog() {
+func PrintAllLEnv() {
 	if IsOperationMode() {
 		for _, v := range viper.AllKeys() {
 			if strings.HasPrefix(v, ".") {
@@ -76,7 +76,6 @@ func PrintAllLog() {
 					fmt.Println(v, ":", value)
 				}
 			}
-
 		}
 	}
 }
