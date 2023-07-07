@@ -83,7 +83,7 @@ func SendHttpRequest(method, uri string, headers string, param string, bodyObj i
 		var queryParam map[string]string
 		err = json.Unmarshal([]byte(param), &queryParam)
 		if err != nil {
-			fmt.Println("파람 마샬 에러", err)
+			fmt.Println("SendHttpRequest queryParam json.Unmarshal Err", err)
 			return "", ""
 		}
 		for k, v := range queryParam {
