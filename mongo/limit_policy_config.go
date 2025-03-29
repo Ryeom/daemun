@@ -85,3 +85,37 @@ func DeleteLimitPolicyConfig(ctx context.Context, client *mongo.Client, url stri
 	log.Printf("문서 삭제 성공 (url: %s): %d건 삭제됨", url, result.DeletedCount)
 	return nil
 }
+
+// LoadTodayLimitPolicyConfigs : 오늘 날짜 기준으로 유효한(limit policy) 정책들을 조회하여 반환
+// 오늘 날짜의 시작(자정)과 끝(내일 자정)을 기준으로 필터링
+func LoadTodayLimitPolicyConfigs(ctx context.Context, client *mongo.Client) ([]LimitPolicyConfig, error) {
+	// 오늘 날짜의 시작과 끝 시간 계산
+	now := time.Now()
+	startOfDay := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	filter := bson.M{
+		"period.start": bson.M{"$lte": endOfDay},
+		"period.end":   bson.M{"$gte": startOfDay},
+	}
+	collection := getLimitPolicyConfigCollection(client)
+	cursor, err := collection.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(ctx)
+
+	var policies []LimitPolicyConfig
+	for cursor.Next(ctx) {
+		var policy LimitPolicyConfig
+		if err := cursor.Decode(&policy); err != nil {
+			log.Printf("정책 디코딩 오류: %v", err)
+			continue
+		}
+		policies = append(policies, policy)
+	}
+	if err := cursor.Err(); err != nil {
+		return nil, err
+	}
+	return policies, nil
+}

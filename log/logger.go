@@ -11,7 +11,7 @@ var SecurityLogger *log.Logger
 var ServerLogger *log.Logger
 var TraceLogger *log.Logger
 
-func InitLoggers() error {
+func Init() error {
 	if _, err := os.Stat("log"); os.IsNotExist(err) {
 		if err := os.Mkdir("log", 0755); err != nil {
 			return err
