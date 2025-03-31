@@ -11,7 +11,6 @@ import (
 	"google.golang.org/grpc"
 
 	logger "github.com/Ryeom/daemun/log"
-	// "daemun/proto" // 실제 proto 패키지 경로로 변경 필요
 )
 
 type DestinationConfig struct {
@@ -55,7 +54,7 @@ func dispatchGRPC(w http.ResponseWriter, r *http.Request, dest DestinationConfig
 	io.WriteString(w, "gRPC 호출 성공: "+r.URL.Path)
 }
 
-// DispatchRequest는 DestinationConfig의 Protocol에 따라 HTTP 또는 gRPC 호출을 수행합니다.
+// DispatchRequest : DestinationConfig의 Protocol에 따라 HTTP 또는 gRPC 호출을 수행
 func DispatchRequest(w http.ResponseWriter, r *http.Request, dest DestinationConfig) {
 	if dest.Protocol == "grpc" {
 		dispatchGRPC(w, r, dest)
