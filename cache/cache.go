@@ -2,20 +2,22 @@ package cache
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/mongo"
-
+	logger "github.com/Ryeom/daemun/log"
+	redisutil "github.com/Ryeom/daemun/redis"
 	"log"
 )
 
-// Init : 현재 필요한 모든 캐시 데이터를 초기화
-func Init(ctx context.Context, client *mongo.Client) error {
-	if err := LoadLimitPolicyCache(ctx, client); err != nil {
+func Init(ctx context.Context) error {
+
+	client, err := redisutil.NewRedisClient(0)
+
+	policies, err := redisutil.LoadTodayLimitPolicyConfigs(ctx, client)
+	if err != nil {
 		log.Printf("limit policy 캐시 로드 실패: %v", err)
 		return err
 	}
 
-	// TODO: 다른 캐시 데이터 초기화 (예: 사용자 세션, 설정값 등)
-
-	log.Printf("모든 캐시 초기화 완료")
+	LimitPolicyCache = policies
+	logger.ServerLogger.Printf("limit policy 캐시 로드 완료: %d개의 정책이 메모리에 저장됨", len(policies))
 	return nil
 }

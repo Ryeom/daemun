@@ -30,7 +30,7 @@ func main() {
 		logger.ServerLogger.Fatalf("설정 정보 로드 실패: %v", err)
 	}
 
-	if err = cache.Init(ctx, client); err != nil {
+	if err = cache.Init(ctx); err != nil {
 		logger.ServerLogger.Fatalf("캐시 초기화 실패: %v", err)
 	}
 
