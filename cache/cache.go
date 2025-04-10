@@ -8,6 +8,10 @@ import (
 )
 
 func Init(ctx context.Context) error {
+	err := redisutil.Init()
+	if err != nil {
+		logger.ServerLogger.Fatalf("Redis 연결 실패: %v", err)
+	}
 
 	client, err := redisutil.NewRedisClient(0)
 

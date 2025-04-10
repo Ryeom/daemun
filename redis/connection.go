@@ -2,7 +2,6 @@ package redisutil
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	logger "github.com/Ryeom/daemun/log"
@@ -15,12 +14,15 @@ const (
 	limitPolicy = 1
 )
 
-func init() {
+func Init() error {
+	Client = make(map[int]*redis.Client)
 	var err error
+
 	Client[limitPolicy], err = NewRedisClient(0)
 	if err != nil {
-		fmt.Println(err)
+		logger.ServerLogger.Fatalln("limitPolicy Redis 연결 실패: %v", err)
 	}
+	return err
 }
 
 func NewRedisClient(num int) (*redis.Client, error) {
