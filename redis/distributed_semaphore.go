@@ -9,15 +9,7 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-// DistributedSemaphore : Redis를 이용한 분산 세마포어를 구현. 각 세마포어는 하나의 고유 키와 최대 토큰 수(maxTokens)를 관리
-type DistributedSemaphore struct {
-	redisClient *redis.Client
-	key         string
-	maxTokens   int
-}
-
-// luaAcquire : Redis Lua 스크립트를 이용해 토큰을 원자적으로 획득
-// 스크립트는 지정한 키의 현재 값이 0보다 크면 1을 감소시키고 1을 반환
+// Lua 스크립트를 이용해 토큰 획득(원자적 DECR)
 var luaAcquire = redis.NewScript(`
 	local current = tonumber(redis.call("GET", KEYS[1]) or "0")
 	if current > 0 then
@@ -28,7 +20,25 @@ var luaAcquire = redis.NewScript(`
 	end
 `)
 
-// NewDistributedSemaphore : 주어진 Redis 클라이언트와 키, 최대 토큰 수를 이용해 DistributedSemaphore 생성 : 초기화 시, 해당 키가 존재하지 않으면 maxTokens 값으로 초기화
+// Lua 스크립트를 이용해 토큰 반환(원자적 INCR)
+var luaRelease = redis.NewScript(`
+	local current = tonumber(redis.call("GET", KEYS[1]) or "0")
+	if current < tonumber(ARGV[1]) then
+		return redis.call("INCR", KEYS[1])
+	else
+		return current
+	end
+`)
+
+// DistributedSemaphore는 Redis를 이용해 분산 세마포어를 구현한 구조체입니다.
+type DistributedSemaphore struct {
+	redisClient *redis.Client
+	key         string // 예: "semaphore:/endpoint:aaaa-1"
+	maxTokens   int
+}
+
+// NewDistributedSemaphore는 지정한 Redis 클라이언트와 키, 최대 토큰 수를 사용해 세마포어를 생성합니다.
+// 초기화 시, 해당 키가 없으면 maxTokens로 설정합니다.
 func NewDistributedSemaphore(redisClient *redis.Client, key string, maxTokens int) *DistributedSemaphore {
 	ctx := context.Background()
 	err := redisClient.SetNX(ctx, key, maxTokens, 0).Err()
@@ -42,7 +52,7 @@ func NewDistributedSemaphore(redisClient *redis.Client, key string, maxTokens in
 	}
 }
 
-// Acquire : Lua 스크립트를 이용해 토큰 1 획득
+// Acquire는 지정한 timeout 내에 Lua 스크립트를 통해 토큰을 획득합니다.
 func (ds *DistributedSemaphore) Acquire(ctx context.Context, timeout time.Duration) error {
 	deadline := time.Now().Add(timeout)
 	for {
@@ -61,16 +71,8 @@ func (ds *DistributedSemaphore) Acquire(ctx context.Context, timeout time.Durati
 	}
 }
 
-// Release : Lua 스크립트를 이용해 토큰을 반환
+// Release는 Lua 스크립트를 통해 토큰을 반환합니다.
 func (ds *DistributedSemaphore) Release(ctx context.Context) error {
-	luaRelease := redis.NewScript(`
-		local current = tonumber(redis.call("GET", KEYS[1]) or "0")
-		if current < tonumber(ARGV[1]) then
-			return redis.call("INCR", KEYS[1])
-		else
-			return current
-		end
-	`)
 	res, err := luaRelease.Run(ctx, ds.redisClient, []string{ds.key}, ds.maxTokens).Result()
 	if err != nil {
 		return err

@@ -2,39 +2,44 @@ package middleware
 
 import (
 	"context"
-	"io"
-	"log"
 	"net/http"
-	"strings"
 	"time"
 
+	logger "github.com/Ryeom/daemun/log"
+	"github.com/gin-gonic/gin"
 	"google.golang.org/grpc"
 )
 
-// GRPCProxyMiddleware : HTTP 요청이 "/grpc/"로 시작 -> gRPC 호출 수행
-func GRPCProxyMiddleware(target string) func(http.Handler) http.Handler {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if strings.HasPrefix(r.URL.Path, "/grpc/") {
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
+func GRPCProxyMiddleware(target string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
+		defer cancel()
 
-				conn, err := grpc.DialContext(ctx, target, grpc.WithInsecure(), grpc.WithBlock())
-				if err != nil {
-					http.Error(w, "gRPC 연결 실패", http.StatusInternalServerError)
-					log.Printf("gRPC 연결 실패: %v", err)
-					return
-				}
-				defer conn.Close()
+		// TODO : 운영환경에서 연결 풀이나 재사용 고려
+		conn, err := grpc.DialContext(ctx, target, grpc.WithInsecure(), grpc.WithBlock())
+		if err != nil {
+			c.String(http.StatusInternalServerError, "gRPC 연결 실패")
+			logger.ServerLogger.Printf("gRPC 연결 실패 (%s): %v", target, err)
+			c.Abort()
+			return
+		}
+		defer conn.Close()
 
-				// client := proto.NewYourServiceClient(conn)
+		// TODO : 아래 내용 서비스에 적용하기~
+		// client := proto.NewYourServiceClient(conn)
+		// grpcReq := &proto.YourRequest{
+		//     // HTTP 요청의 파라미터, Body, Header 등을 기반으로 값 설정
+		// }
+		// grpcResp, err := client.YourMethod(ctx, grpcReq)
+		// if err != nil {
+		//     c.String(http.StatusInternalServerError, "gRPC 호출 실패")
+		//     logger.ServerLogger.Printf("gRPC 호출 실패: %v", err)
+		//     c.Abort()
+		//     return
+		// }
+		// c.JSON(http.StatusOK, grpcResp)
 
-				w.Header().Set("Content-Type", "text/plain")
-				io.WriteString(w, "gRPC Proxy 호출 성공: "+r.URL.Path)
-				return
-			}
-
-			next.ServeHTTP(w, r)
-		})
+		c.String(http.StatusOK, "gRPC Proxy 호출 성공: %s", c.Request.URL.Path)
+		c.Abort()
 	}
 }

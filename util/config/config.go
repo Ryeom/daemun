@@ -2,11 +2,9 @@ package config
 
 import (
 	"context"
-	"log"
-	"time"
-
+	mongoutil "github.com/Ryeom/daemun/mongo"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo"
+	"time"
 )
 
 type RouteConfig struct { // 엔드포인트 설정 정보
@@ -19,10 +17,10 @@ type AppConfig struct { // 설정 정보
 	Routes []RouteConfig `bson:"routes" json:"routes"`
 }
 
-func LoadConfig(ctx context.Context, client *mongo.Client) (*AppConfig, error) {
+func (ac *AppConfig) getRouteInfo(ctx context.Context) error {
 	dbName := "daemun"
 	collName := "endpoint_config"
-	collection := client.Database(dbName).Collection(collName)
+	collection := mongoutil.Client.Database(dbName).Collection(collName)
 
 	filter := bson.M{"platform": bson.M{"$in": []string{"common", "level5"}}}
 
@@ -31,7 +29,7 @@ func LoadConfig(ctx context.Context, client *mongo.Client) (*AppConfig, error) {
 
 	cursor, err := collection.Find(queryCtx, filter)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer cursor.Close(ctx)
 
@@ -39,15 +37,23 @@ func LoadConfig(ctx context.Context, client *mongo.Client) (*AppConfig, error) {
 	for cursor.Next(ctx) {
 		var route RouteConfig
 		if err := cursor.Decode(&route); err != nil {
-			return nil, err
+			return err
 		}
 		routes = append(routes, route)
 	}
 	if err := cursor.Err(); err != nil {
-		return nil, err
+		return err
 	}
 
-	config := AppConfig{Routes: routes}
-	log.Printf("로드된 설정: %+v", config)
-	return &config, nil
+	ac.Routes = routes
+	return nil
+}
+
+func LoadConfig(ctx context.Context) (*AppConfig, error) {
+	var err error
+	appConfig := AppConfig{}
+
+	/* 1. destination list */
+
+	return &appConfig, err
 }

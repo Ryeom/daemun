@@ -2,63 +2,71 @@ package route
 
 import (
 	"context"
-	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"time"
 
-	"google.golang.org/grpc"
-
 	logger "github.com/Ryeom/daemun/log"
+	"github.com/gin-gonic/gin"
+	"google.golang.org/grpc"
 )
 
 type DestinationConfig struct {
-	Protocol string // "http" 또는 "grpc"
-	URL      string // 예: "http://localhost:9001" 또는 "localhost:50051" (grpc)
+	Protocol string
+	URL      string
 }
 
-func dispatchHTTP(w http.ResponseWriter, r *http.Request, dest DestinationConfig) {
+func dispatchHTTP(c *gin.Context, dest DestinationConfig) {
 	parsedURL, err := url.Parse(dest.URL)
 	if err != nil {
-		http.Error(w, "잘못된 대상 URL", http.StatusInternalServerError)
-		logger.ServerLogger.Printf("잘못된 대상 URL: %v", err)
+		c.String(http.StatusInternalServerError, "잘못된 대상 URL")
+		logger.ServerLogger.Printf("잘못된 대상 URL %s: %v", dest.URL, err)
 		return
 	}
 	proxy := httputil.NewSingleHostReverseProxy(parsedURL)
-	proxy.ServeHTTP(w, r)
+	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
+		logger.ServerLogger.Printf("Reverse proxy error: %v", err)
+		http.Error(w, "Proxy Error", http.StatusBadGateway)
+	}
+
+	proxy.ServeHTTP(c.Writer, c.Request)
 }
 
-func dispatchGRPC(w http.ResponseWriter, r *http.Request, dest DestinationConfig) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+func dispatchGRPC(c *gin.Context, dest DestinationConfig) {
+	ctx, cancel := context.WithTimeout(c.Request.Context(), 5*time.Second)
 	defer cancel()
 
+	// TODO : 연결 재사용/풀링 고려하기
 	conn, err := grpc.DialContext(ctx, dest.URL, grpc.WithInsecure(), grpc.WithBlock())
 	if err != nil {
-		http.Error(w, "gRPC 연결 실패", http.StatusInternalServerError)
-		logger.ServerLogger.Printf("gRPC 연결 실패: %v", err)
+		c.String(http.StatusInternalServerError, "gRPC 연결 실패")
+		logger.ServerLogger.Printf("gRPC 연결 실패 (%s): %v", dest.URL, err)
 		return
 	}
 	defer conn.Close()
 
-	// TODO: gRPC 클라이언트로 HTTP 요청을 gRPC 요청으로 변환하여 호출
+	// TODO: 실제 gRPC 클라이언트를 사용하여 HTTP 요청을 gRPC 요청으로 변환 후 호출
+	// 예를 들어, proto 파일로부터 생성된 클라이언트를 사용하여 요청을 전송하고 응답을 처리합니다.
 	// client := proto.NewYourServiceClient(conn)
-	// grpcReq := &proto.YourRequest{ ... }
+	// grpcReq := &proto.YourRequest{...} // 변환 로직 구현 필요
 	// grpcResp, err := client.YourMethod(ctx, grpcReq)
 	// if err != nil { ... }
-	// w.Header().Set("Content-Type", "application/json")
-	// io.WriteString(w, grpcResp.String())
 
-	// 예시: 단순 성공 메시지 반환
-	w.Header().Set("Content-Type", "text/plain")
-	io.WriteString(w, "gRPC 호출 성공: "+r.URL.Path)
+	c.String(http.StatusOK, "gRPC 호출 성공: %s", c.Request.URL.Path)
 }
 
-// DispatchRequest : DestinationConfig의 Protocol에 따라 HTTP 또는 gRPC 호출을 수행
-func DispatchRequest(w http.ResponseWriter, r *http.Request, dest DestinationConfig) {
+func DispatchRequest(c *gin.Context, dest DestinationConfig) {
 	if dest.Protocol == "grpc" {
-		dispatchGRPC(w, r, dest)
+		dispatchGRPC(c, dest)
 	} else {
-		dispatchHTTP(w, r, dest)
+		dispatchHTTP(c, dest)
+	}
+}
+
+func GinDispatchMiddleware(dest DestinationConfig) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		DispatchRequest(c, dest)
+		c.Abort()
 	}
 }

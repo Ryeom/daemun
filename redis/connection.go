@@ -8,17 +8,11 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-var Client map[int]*redis.Client
-
-const (
-	limitPolicy = 1
-)
+var LimitPolicy *redis.Client
 
 func Init() error {
-	Client = make(map[int]*redis.Client)
 	var err error
-
-	Client[limitPolicy], err = NewRedisClient(0)
+	LimitPolicy, err = NewRedisClient(0)
 	if err != nil {
 		logger.ServerLogger.Fatalln("limitPolicy Redis 연결 실패: %v", err)
 	}
@@ -27,7 +21,7 @@ func Init() error {
 
 func NewRedisClient(num int) (*redis.Client, error) {
 	options := &redis.Options{
-		Addr:         "localhost:6379",
+		Addr:         "",
 		Password:     "",
 		DB:           num,
 		PoolSize:     10,
